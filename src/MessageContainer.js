@@ -10,7 +10,7 @@
 import PropTypes from 'prop-types';
 import React from 'react';
 
-import { FlatList, View, StyleSheet, Platform } from 'react-native';
+import { FlatList, View, StyleSheet, Keyboard } from 'react-native';
 
 import LoadEarlier from './LoadEarlier';
 import Message from './Message';
@@ -24,6 +24,34 @@ export default class MessageContainer extends React.PureComponent {
     this.renderFooter = this.renderFooter.bind(this);
     this.renderLoadEarlier = this.renderLoadEarlier.bind(this);
     this.renderHeaderWrapper = this.renderHeaderWrapper.bind(this);
+    this.attachKeyboardListeners = this.attachKeyboardListeners.bind(this);
+    this.detatchKeyboardListeners = this.detatchKeyboardListeners.bind(this);
+
+    if (props.messages.length === 0) {
+      this.attachKeyboardListeners(props);
+    }
+  }
+
+  componentWillReceiveProps(nextProps) {
+    if (this.props.messages.length === 0 && nextProps.messages.length > 0) {
+      this.detatchKeyboardListeners();
+    } else if (this.props.messages.length > 0 && nextProps.messages.length === 0) {
+      this.attachKeyboardListeners(nextProps);
+    }
+  }
+
+  attachKeyboardListeners(props) {
+    Keyboard.addListener('keyboardWillShow', props.invertibleScrollViewProps.onKeyboardWillShow);
+    Keyboard.addListener('keyboardDidShow', props.invertibleScrollViewProps.onKeyboardDidShow);
+    Keyboard.addListener('keyboardWillHide', props.invertibleScrollViewProps.onKeyboardWillHide);
+    Keyboard.addListener('keyboardDidHide', props.invertibleScrollViewProps.onKeyboardDidHide);
+  }
+
+  detatchKeyboardListeners() {
+    Keyboard.removeListener('keyboardWillShow', this.props.invertibleScrollViewProps.onKeyboardWillShow);
+    Keyboard.removeListener('keyboardDidShow', this.props.invertibleScrollViewProps.onKeyboardDidShow);
+    Keyboard.removeListener('keyboardWillHide', this.props.invertibleScrollViewProps.onKeyboardWillHide);
+    Keyboard.removeListener('keyboardDidHide', this.props.invertibleScrollViewProps.onKeyboardDidHide);
   }
 
   renderFooter() {
@@ -96,20 +124,18 @@ export default class MessageContainer extends React.PureComponent {
       <View style={styles.container}>
         <FlatList
           ref={(ref) => (this.flatListRef = ref)}
-          keyExtractor={(item) => item._id}
+          keyExtractor={(item) => `${item._id}`}
           enableEmptySections
           automaticallyAdjustContentInsets={false}
-          removeClippedSubviews={Platform.OS === 'android'}
           inverted={this.props.inverted}
-          {...this.props.listViewProps}
           data={this.props.messages}
           style={styles.listStyle}
           contentContainerStyle={styles.contentContainerStyle}
           renderItem={this.renderRow}
-          renderHeader={this.renderFooter}
-          renderFooter={this.renderLoadEarlier}
           {...this.props.invertibleScrollViewProps}
           ListFooterComponent={this.renderHeaderWrapper}
+          ListHeaderComponent={this.renderFooter}
+          {...this.props.listViewProps}
         />
       </View>
     );
